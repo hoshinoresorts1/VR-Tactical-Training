@@ -1772,6 +1772,54 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
+--- !u!1 &1979020068
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1979020070}
+  - component: {fileID: 1979020069}
+  m_Layer: 0
+  m_Name: TrainingScoreManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1979020069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1979020068}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb4597f5edcad471fac08b6d3f38b796, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gearScore: 0
+  shootingScore: 0
+  cqbScore: 0
+  mineScore: 0
+--- !u!4 &1979020070
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1979020068}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2092139007
 GameObject:
   m_ObjectHideFlags: 0
@@ -1947,6 +1995,21 @@ PrefabInstance:
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 1146103824}
+    - target: {fileID: 6657991516599469536, guid: e453fa92c3fef4a11a9e99ba9ace6ac7, type: 3}
+      propertyPath: m_text
+      value: 'Gear Checklist
+
+        [ ] Helmet
+
+        [ ] Vest
+
+        [ ] Belt
+
+        [
+        ] Canteen
+
+        [ ] Grenade'
+      objectReference: {fileID: 0}
     - target: {fileID: 7807903909806799389, guid: e453fa92c3fef4a11a9e99ba9ace6ac7, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
@@ -1967,3 +2030,4 @@ SceneRoots:
   - {fileID: 1249617921}
   - {fileID: 1119244064}
   - {fileID: 6274841331793037557}
+  - {fileID: 1979020070}

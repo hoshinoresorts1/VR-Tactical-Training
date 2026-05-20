@@ -9,11 +9,11 @@ public class GearChecklistUI : MonoBehaviour
 
     private static readonly Dictionary<GearType, string> Labels = new Dictionary<GearType, string>
     {
-        { GearType.Helmet, "헬멧" },
-        { GearType.Vest, "방탄조끼" },
-        { GearType.Belt, "탄띠" },
-        { GearType.Canteen, "수통" },
-        { GearType.Grenade, "수류탄" }
+        { GearType.Helmet, "Helmet" },
+        { GearType.Vest, "Vest" },
+        { GearType.Belt, "Belt" },
+        { GearType.Canteen, "Canteen" },
+        { GearType.Grenade, "Grenade" }
     };
 
     private void Awake()
@@ -32,7 +32,7 @@ public class GearChecklistUI : MonoBehaviour
         }
 
         StringBuilder builder = new StringBuilder();
-        builder.AppendLine("군장 착용 체크리스트");
+        builder.AppendLine("Gear Checklist");
 
         AppendLine(builder, equippedState, GearType.Helmet);
         AppendLine(builder, equippedState, GearType.Vest);
@@ -43,7 +43,7 @@ public class GearChecklistUI : MonoBehaviour
         if (isTrainingReady)
         {
             builder.AppendLine();
-            builder.Append("훈련 준비 완료");
+            builder.Append("READY");
         }
 
         checklistText.text = builder.ToString();
@@ -52,7 +52,7 @@ public class GearChecklistUI : MonoBehaviour
     private static void AppendLine(StringBuilder builder, IReadOnlyDictionary<GearType, bool> equippedState, GearType gearType)
     {
         bool isEquipped = equippedState.TryGetValue(gearType, out bool value) && value;
-        string marker = isEquipped ? "✅" : "□";
+        string marker = isEquipped ? "[X]" : "[ ]";
         builder.AppendLine($"{marker} {Labels[gearType]}");
     }
 }

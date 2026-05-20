@@ -1758,7 +1758,6 @@ Transform:
   - {fileID: 4527265306145663262}
   - {fileID: 5541846677963187666}
   - {fileID: 917226692016259623}
-  - {fileID: 4638453090308491268}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7968317786851378359
@@ -2078,54 +2077,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3179905910616813726}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &6480698717266124889
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4638453090308491268}
-  - component: {fileID: 5370219832619156381}
-  m_Layer: 0
-  m_Name: TrainingScoreManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4638453090308491268
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6480698717266124889}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5408739675027385511}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5370219832619156381
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6480698717266124889}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eb4597f5edcad471fac08b6d3f38b796, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gearScore: 0
-  shootingScore: 0
-  cqbScore: 0
-  mineScore: 0
 --- !u!1 &6867033879358803080
 GameObject:
   m_ObjectHideFlags: 0
