@@ -40,11 +40,29 @@ public class GearEquipManager : MonoBehaviour
             return false;
         }
 
-        item.EquipToSlot(slot.AttachPoint);
+        item.EquipToSlot(slot.AttachPoint, this);
         equippedState[gearType] = true;
         NotifyStateChanged();
         AwardScoreIfComplete();
         return true;
+    }
+
+    // Called by GearItem when the user re-grabs an equipped item to detach it.
+    // Score is intentionally NOT refunded: once the trainee completes the gear set, the score stays.
+    public void NotifyUnequipped(GearItem item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        if (!equippedState.TryGetValue(item.GearType, out bool isCurrentlyEquipped) || !isCurrentlyEquipped)
+        {
+            return;
+        }
+
+        equippedState[item.GearType] = false;
+        NotifyStateChanged();
     }
 
     public bool IsEquipped(GearType gearType)

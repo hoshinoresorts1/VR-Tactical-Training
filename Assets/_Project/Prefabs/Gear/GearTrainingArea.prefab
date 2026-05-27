@@ -642,6 +642,7 @@ GameObject:
   - component: {fileID: 5475679553751442027}
   - component: {fileID: 3711677717222773375}
   - component: {fileID: 5205540881241588367}
+  - component: {fileID: 1584133260776791333}
   m_Layer: 0
   m_Name: RightHipSlot
   m_TagString: Untagged
@@ -751,6 +752,23 @@ MonoBehaviour:
   acceptedType: 4
   attachPoint: {fileID: 4800094415533688598}
   equipManager: {fileID: 7968317786851378359}
+  slotVisual: {fileID: 0}
+--- !u!114 &1584133260776791333
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2367554500411642777}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e50369a53b1d469cafbf93e9291911e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  guideRenderer: {fileID: 0}
+  idleColor: {r: 0, g: 0.6, b: 1, a: 0.35}
+  equippedFlashColor: {r: 0, g: 1, b: 0.3, a: 0.85}
+  flashDuration: 0.5
 --- !u!1 &2538862382931415756
 GameObject:
   m_ObjectHideFlags: 0
@@ -1036,6 +1054,7 @@ GameObject:
   - component: {fileID: 7532125671323701929}
   - component: {fileID: 551710768477237716}
   - component: {fileID: 495610737042019833}
+  - component: {fileID: 7233126192672050992}
   m_Layer: 0
   m_Name: WaistSlot
   m_TagString: Untagged
@@ -1145,6 +1164,23 @@ MonoBehaviour:
   acceptedType: 2
   attachPoint: {fileID: 5040889420012830434}
   equipManager: {fileID: 7968317786851378359}
+  slotVisual: {fileID: 0}
+--- !u!114 &7233126192672050992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2865923332306566315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e50369a53b1d469cafbf93e9291911e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  guideRenderer: {fileID: 0}
+  idleColor: {r: 0, g: 0.6, b: 1, a: 0.35}
+  equippedFlashColor: {r: 0, g: 1, b: 0.3, a: 0.85}
+  flashDuration: 0.5
 --- !u!1 &3439987942310692796
 GameObject:
   m_ObjectHideFlags: 0
@@ -1494,6 +1530,7 @@ GameObject:
   - component: {fileID: 1873897939025687128}
   - component: {fileID: 7807903909806799389}
   - component: {fileID: 8762619196040596066}
+  - component: {fileID: 2698063851609741766}
   m_Layer: 0
   m_Name: ChestSlot
   m_TagString: Untagged
@@ -1603,6 +1640,23 @@ MonoBehaviour:
   acceptedType: 1
   attachPoint: {fileID: 3004417028506410448}
   equipManager: {fileID: 7968317786851378359}
+  slotVisual: {fileID: 0}
+--- !u!114 &2698063851609741766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3988224343702561494}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e50369a53b1d469cafbf93e9291911e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  guideRenderer: {fileID: 0}
+  idleColor: {r: 0, g: 0.6, b: 1, a: 0.35}
+  equippedFlashColor: {r: 0, g: 1, b: 0.3, a: 0.85}
+  flashDuration: 0.5
 --- !u!1 &4391622049454921461
 GameObject:
   m_ObjectHideFlags: 0
@@ -1616,6 +1670,7 @@ GameObject:
   - component: {fileID: 4280089705991782547}
   - component: {fileID: 6083396387033694882}
   - component: {fileID: 8182893515987995190}
+  - component: {fileID: 9092590222945191635}
   m_Layer: 0
   m_Name: HeadSlot
   m_TagString: Untagged
@@ -1725,6 +1780,23 @@ MonoBehaviour:
   acceptedType: 0
   attachPoint: {fileID: 6266042581601360405}
   equipManager: {fileID: 7968317786851378359}
+  slotVisual: {fileID: 0}
+--- !u!114 &9092590222945191635
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4391622049454921461}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e50369a53b1d469cafbf93e9291911e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  guideRenderer: {fileID: 0}
+  idleColor: {r: 0, g: 0.6, b: 1, a: 0.35}
+  equippedFlashColor: {r: 0, g: 1, b: 0.3, a: 0.85}
+  flashDuration: 0.5
 --- !u!1 &4812387446687672044
 GameObject:
   m_ObjectHideFlags: 0
@@ -2152,6 +2224,7 @@ GameObject:
   - component: {fileID: 5539750076668782108}
   - component: {fileID: 12604731466692687}
   - component: {fileID: 8683363682278257033}
+  - component: {fileID: 881677870960712304}
   m_Layer: 0
   m_Name: LeftHipSlot
   m_TagString: Untagged
@@ -2261,6 +2334,23 @@ MonoBehaviour:
   acceptedType: 3
   attachPoint: {fileID: 7727646629212937277}
   equipManager: {fileID: 7968317786851378359}
+  slotVisual: {fileID: 0}
+--- !u!114 &881677870960712304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8848844198381216680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e50369a53b1d469cafbf93e9291911e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  guideRenderer: {fileID: 0}
+  idleColor: {r: 0, g: 0.6, b: 1, a: 0.35}
+  equippedFlashColor: {r: 0, g: 1, b: 0.3, a: 0.85}
+  flashDuration: 0.5
 --- !u!1 &9094363668144431718
 GameObject:
   m_ObjectHideFlags: 0
