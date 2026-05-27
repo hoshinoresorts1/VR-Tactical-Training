@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 public class MineGrid : MonoBehaviour
 {
+    [SerializeField] private bool autoGenerateGrid;
     [SerializeField] private int gridWidth = 10;
     [SerializeField] private int gridHeight = 10;
     [SerializeField] private int mineCount = 10;
@@ -28,7 +29,10 @@ public class MineGrid : MonoBehaviour
 
     private void Start()
     {
-        InitializeGrid();
+        if (autoGenerateGrid)
+        {
+            InitializeGrid();
+        }
     }
 
     public void InitializeGrid()
@@ -258,6 +262,10 @@ public class MineGrid : MonoBehaviour
                     mineObject.transform.localPosition = Vector3.up * 0.05f;
                     mineObject.transform.localRotation = Quaternion.identity;
                     mineObject.transform.localScale = Vector3.one * 0.5f;
+                    // Link mine component back to this cell so defusal can update cell state
+                    var mineComp = mineObject.GetComponent<global::Mine>();
+                    if (mineComp != null)
+                        mineComp.parentCell = cellData;
                     mineObject.SetActive(false);
                     cellData.mineObject = mineObject;
                 }

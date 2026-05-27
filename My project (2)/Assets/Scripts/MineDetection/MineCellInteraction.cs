@@ -34,6 +34,15 @@ public class MineCellInteraction : MonoBehaviour
 
         if (cellData.hasMine)
         {
+            // Activate mine visual and play explosion effect if available
+            if (cellData.mineObject != null)
+            {
+                cellData.mineObject.SetActive(true);
+                var mineComp = cellData.mineObject.GetComponent<global::Mine>();
+                if (mineComp != null)
+                    mineComp.Explode();
+            }
+
             gridReference.OnPlayerSteppedMine();
         }
         else
