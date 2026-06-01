@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Collider))]
+// In the new Ray+Trigger interaction model the slot no longer needs a trigger
+// collider — the manager (via GearItem.selectEntered) drives equip directly.
+// We keep optional trigger support for backward compatibility but never require it.
 public class GearSlot : MonoBehaviour
 {
     [SerializeField] private GearType acceptedType;
@@ -68,16 +70,10 @@ public class GearSlot : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        GearItem gearItem = other.GetComponentInParent<GearItem>();
-        if (gearItem == null || gearItem.IsEquipped || gearItem.GearType != acceptedType || equipManager == null)
-        {
-            return;
-        }
-
-        if (equipManager.TryEquip(gearItem, this) && slotVisual != null)
-        {
-            slotVisual.FlashEquipped();
-        }
+        // Legacy trigger-based equip path is no longer used in the direct-to-bone model.
+        // The GearItem now drives equip via its selectEntered handler (Ray + Trigger).
+        // Kept intentionally empty so existing trigger colliders cause no errors.
+        _ = other;
     }
 
     private void OnEquippedStateChanged(IReadOnlyDictionary<GearType, bool> state, bool isReady)
@@ -99,6 +95,8 @@ public class GearSlot : MonoBehaviour
 
     private void EnsureTriggerCollider()
     {
+        // Optional: if a collider exists (legacy slots), make sure it's a trigger.
+        // Bone-attached slots typically have no collider at all.
         Collider slotCollider = GetComponent<Collider>();
         if (slotCollider != null)
         {

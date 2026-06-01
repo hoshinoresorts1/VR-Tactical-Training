@@ -6,6 +6,7 @@ public class GearEquipManager : MonoBehaviour
 {
     [SerializeField] private GearChecklistUI checklistUI;
     [SerializeField] private int completionScore = 20;
+    [SerializeField] private Animator characterAnimator;
 
     private readonly Dictionary<GearType, bool> equippedState = new Dictionary<GearType, bool>();
     private bool scoreAwarded;
@@ -27,27 +28,87 @@ public class GearEquipManager : MonoBehaviour
         NotifyStateChanged();
     }
 
-    public bool TryEquip(GearItem item, GearSlot slot)
+    // Ray + Trigger interaction: GearItem calls this on selectEntered.
+    // We look up the item's desired Humanoid bone on the character Animator and
+    // re-parent the item there. No intermediate GearSlot is involved.
+    public bool RequestEquip(GearItem item)
     {
-        if (item == null || slot == null || item.IsEquipped)
+        if (item == null || item.IsEquipped)
+        {
+            return false;
+        }
+        if (IsEquipped(item.GearType))
+        {
+            return false;
+        }
+        EnsureAnimatorCached();
+        if (characterAnimator == null || !characterAnimator.isHuman)
+        {
+            return false;
+        }
+        Transform bone = characterAnimator.GetBoneTransform(item.AttachBone);
+        if (bone == null)
         {
             return false;
         }
 
-        GearType gearType = item.GearType;
-        if (gearType != slot.AcceptedType || IsEquipped(gearType))
-        {
-            return false;
-        }
-
-        item.EquipToSlot(slot.AttachPoint, this);
-        equippedState[gearType] = true;
+        item.EquipToBone(bone, item.LocalPositionOffset, item.LocalEulerOffset, this);
+        equippedState[item.GearType] = true;
         NotifyStateChanged();
         AwardScoreIfComplete();
         return true;
     }
 
-    // Called by GearItem when the user re-grabs an equipped item to detach it.
+    private void EnsureAnimatorCached()
+    {
+        if (characterAnimator != null)
+        {
+            return;
+        }
+        // Lazy lookup: any Humanoid Animator in the scene (typically PlayerCharacter).
+        Animator[] all = FindObjectsByType<Animator>(FindObjectsSortMode.None);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i] != null && all[i].isHuman)
+            {
+                characterAnimator = all[i];
+                return;
+            }
+        }
+    }
+
+    // UI-triggered single-item unequip (called from the checklist row buttons).
+    public bool RequestUnequip(GearType type)
+    {
+        GearItem[] items = FindObjectsByType<GearItem>(FindObjectsSortMode.None);
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i] != null && items[i].GearType == type && items[i].IsEquipped)
+            {
+                items[i].Unequip();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // UI-triggered "take everything off" — called from the UNEQUIP ALL button.
+    public int RequestUnequipAll()
+    {
+        int count = 0;
+        GearItem[] items = FindObjectsByType<GearItem>(FindObjectsSortMode.None);
+        for (int i = 0; i < items.Length; i++)
+        {
+            if (items[i] != null && items[i].IsEquipped)
+            {
+                items[i].Unequip();
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Called by GearItem when the user re-selects an equipped item to detach it.
     // Score is intentionally NOT refunded: once the trainee completes the gear set, the score stays.
     public void NotifyUnequipped(GearItem item)
     {
