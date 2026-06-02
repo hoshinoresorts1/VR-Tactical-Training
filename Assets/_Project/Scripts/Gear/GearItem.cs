@@ -29,7 +29,8 @@ public class GearItem : MonoBehaviour
     public bool IsEquipped { get; private set; }
 
     private Transform originalParent;
-    private Vector3 originalLocalScale = Vector3.one;
+    private Vector3 originalLocalScale = Vector3.one;    private int originalLayer;
+
     private GearEquipManager equipManager;
     private Transform attachedBone;
     private Vector3 activePositionOffset;
@@ -45,6 +46,7 @@ public class GearItem : MonoBehaviour
         CacheComponents();
         originalParent = transform.parent;
         originalLocalScale = transform.localScale;
+        originalLayer = gameObject.layer;
     }
 
     private void OnEnable()
@@ -92,6 +94,10 @@ public class GearItem : MonoBehaviour
         }
 
         ApplyEquippedTransform();
+
+        // Move the worn item onto the character's layer (PlayerCharacter) so the
+        // mirror, which culls to that layer only, reflects the equipped gear.
+        SetLayerRecursively(gameObject, bone.gameObject.layer);
     }
 
     private void ApplyEquippedTransform()
@@ -156,11 +162,24 @@ public class GearItem : MonoBehaviour
         transform.SetParent(originalParent, true);
         transform.localScale = originalLocalScale;
 
+        // Restore the original layer so the un-equipped item is no longer
+        // reflected by the PlayerCharacter-only mirror.
+        SetLayerRecursively(gameObject, originalLayer);
+
         if (equipManager != null)
         {
             GearEquipManager manager = equipManager;
             equipManager = null;
             manager.NotifyUnequipped(this);
+        }
+    }
+
+    private static void SetLayerRecursively(GameObject go, int layer)
+    {
+        go.layer = layer;
+        foreach (Transform child in go.transform)
+        {
+            SetLayerRecursively(child.gameObject, layer);
         }
     }
 
