@@ -6,7 +6,7 @@ public class DetectionManager : MonoBehaviour
     public static DetectionManager Instance { get; private set; }
 
     [Tooltip("Maximum detection range in meters")]
-    public float detectionRange = 6f;
+    public float detectionRange = 3f;
 
     [Tooltip("Signal strength required to reveal a hidden mine.")]
     [Range(0f, 1f)]
@@ -62,6 +62,7 @@ public class DetectionManager : MonoBehaviour
     {
         float maxSignal = 0f;
         Mine nearestMine = null;
+        HashSet<Mine> minesInRange = new HashSet<Mine>();
 
         for (int i = mines.Count - 1; i >= 0; i--)
         {
@@ -83,6 +84,7 @@ public class DetectionManager : MonoBehaviour
 
             float d = Vector3.Distance(detectorPosition, mine.transform.position);
             if (d > detectionRange) continue;
+            minesInRange.Add(mine);
             float s = Mathf.Clamp01(1f - (d / detectionRange));
             if (s > maxSignal)
             {
@@ -95,10 +97,33 @@ public class DetectionManager : MonoBehaviour
         {
             nearestMine.Reveal();
             messageUntil = Time.time + messageDuration;
+            VRMineHUD.GetOrCreate().ShowDetection(messageDuration);
         }
+
+        HideRevealedMinesOutsideRange(minesInRange);
 
         detectionUI?.UpdateDetectionUI(maxSignal);
         UpdateAudio(maxSignal);
+    }
+
+    public void StopDetection()
+    {
+        HideRevealedMinesOutsideRange(new HashSet<Mine>());
+        detectionUI?.UpdateDetectionUI(0f);
+    }
+
+    private void HideRevealedMinesOutsideRange(HashSet<Mine> minesInRange)
+    {
+        foreach (Mine mine in mines)
+        {
+            if (mine == null || mine.IsNeutralized() || mine.IsDefusalInProgress())
+                continue;
+
+            if (!minesInRange.Contains(mine))
+            {
+                mine.HideIfNotActive();
+            }
+        }
     }
 
     private void OnGUI()
@@ -133,6 +158,7 @@ public class DetectionManager : MonoBehaviour
         audioSource.volume = Mathf.Lerp(0.15f, 0.8f, signal);
         audioSource.pitch = Mathf.Lerp(0.8f, 1.8f, signal);
         audioSource.PlayOneShot(beepClip);
+        XRHapticFeedback.PulseControllers(Mathf.Lerp(0.08f, 0.32f, signal), 0.05f);
         nextBeepTime = Time.time + interval;
     }
 

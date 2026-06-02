@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 #if ENABLE_INPUT_SYSTEM
@@ -34,6 +35,7 @@ public class WireDefusal : MonoBehaviour
 
     private int currentStep = 0;
     private float timeRemaining;
+    private bool completionQueued;
 
     private void OnEnable()
     {
@@ -49,7 +51,7 @@ public class WireDefusal : MonoBehaviour
             RandomizeSequence();
         }
 
-        ApplyWireColors();
+        PrepareWires();
         ResetDefusal();
     }
 
@@ -57,11 +59,14 @@ public class WireDefusal : MonoBehaviour
     {
         currentStep = 0;
         timeRemaining = timePerWire;
+        completionQueued = false;
     }
 
     private void Update()
     {
         if (currentStep >= correctSequence.Length) return;
+
+        VRMineHUD.GetOrCreate().SetDefusalInfo(GetSequenceText(), Mathf.CeilToInt(timeRemaining));
 
         if (WasWireKeyPressed(0)) SelectWire(0);
         if (WasWireKeyPressed(1)) SelectWire(1);
@@ -126,6 +131,8 @@ public class WireDefusal : MonoBehaviour
         if (wireIndex == correctSequence[currentStep])
         {
             // correct
+            XRHapticFeedback.PulseControllers(0.28f, 0.08f);
+            ShowWireCut(wireIndex);
             currentStep++;
             timeRemaining = timePerWire;
             if (currentStep >= correctSequence.Length)
@@ -141,12 +148,24 @@ public class WireDefusal : MonoBehaviour
 
     private void Success()
     {
+        if (completionQueued)
+            return;
+
+        completionQueued = true;
+        VRMineHUD.GetOrCreate().ClearDefusalInfo();
+        StartCoroutine(CompleteSuccessAfterDelay());
+    }
+
+    private IEnumerator CompleteSuccessAfterDelay()
+    {
+        yield return new WaitForSeconds(0.35f);
         onDefusalSuccess?.Invoke();
         gameObject.SetActive(false);
     }
 
     private void Fail()
     {
+        VRMineHUD.GetOrCreate().ClearDefusalInfo();
         onDefusalFailed?.Invoke();
         // keep disabled to simulate explosion; scene logic can respawn
         gameObject.SetActive(false);
@@ -163,7 +182,7 @@ public class WireDefusal : MonoBehaviour
         }
     }
 
-    private void ApplyWireColors()
+    private void PrepareWires()
     {
         WireInteractable[] wires = GetComponentsInChildren<WireInteractable>(true);
         foreach (WireInteractable wire in wires)
@@ -180,6 +199,21 @@ public class WireDefusal : MonoBehaviour
             Material material = new Material(shader);
             material.color = WireColors[colorIndex];
             renderer.material = material;
+
+            wire.ConfigureSurfaceLayout();
+        }
+    }
+
+    private void ShowWireCut(int wireIndex)
+    {
+        WireInteractable[] wires = GetComponentsInChildren<WireInteractable>(true);
+        foreach (WireInteractable wire in wires)
+        {
+            if (wire.wireIndex == wireIndex)
+            {
+                wire.ShowCutVisual();
+                return;
+            }
         }
     }
 

@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.XR.Interaction.Toolkit.Interactables;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -30,6 +32,7 @@ public class Mine : MonoBehaviour
     private bool isRevealed = true;
     private GameObject activeDefusalObject;
     private Renderer[] mineRenderers;
+    private XRSimpleInteractable xrInteractable;
 
     private void Awake()
     {
@@ -38,6 +41,21 @@ public class Mine : MonoBehaviour
         isRevealed = !startsHidden;
         SetMineVisible(isRevealed);
         EnsureTriggerCollider();
+        EnsureXRInteractable();
+    }
+
+    private void OnEnable()
+    {
+        EnsureXRInteractable();
+
+        if (xrInteractable != null)
+            xrInteractable.selectEntered.AddListener(OnXRSelectEntered);
+    }
+
+    private void OnDisable()
+    {
+        if (xrInteractable != null)
+            xrInteractable.selectEntered.RemoveListener(OnXRSelectEntered);
     }
 
     private void Update()
@@ -62,6 +80,9 @@ public class Mine : MonoBehaviour
         if (isDefused || hasExploded)
             return;
 
+        if (IsMineDetectorCollider(other))
+            return;
+
         if (other.CompareTag("Player") || other.GetComponentInParent<CharacterController>() != null)
         {
             Explode();
@@ -73,10 +94,18 @@ public class Mine : MonoBehaviour
         if (isDefused || hasExploded)
             return;
 
+        if (IsMineDetectorCollider(collision.collider))
+            return;
+
         if (collision.collider.CompareTag("Player") || collision.collider.GetComponentInParent<CharacterController>() != null)
         {
             Explode();
         }
+    }
+
+    private bool IsMineDetectorCollider(Collider collider)
+    {
+        return collider != null && collider.GetComponentInParent<MineDetector>() != null;
     }
 
     private void EnsureTriggerCollider()
@@ -92,6 +121,18 @@ public class Mine : MonoBehaviour
         }
 
         collider.isTrigger = true;
+    }
+
+    private void EnsureXRInteractable()
+    {
+        xrInteractable = GetComponent<XRSimpleInteractable>();
+        if (xrInteractable == null)
+            xrInteractable = gameObject.AddComponent<XRSimpleInteractable>();
+    }
+
+    private void OnXRSelectEntered(SelectEnterEventArgs args)
+    {
+        StartDefusal();
     }
 
     private bool IsDefusalPressed()
@@ -181,14 +222,15 @@ public class Mine : MonoBehaviour
         wireDef.onDefusalFailed.AddListener(HandleDefusalFailed);
 
         // Create 3 simple colored wire objects
-        Color[] colors = new Color[] { Color.red, Color.green, Color.blue };
+        Color[] colors = new Color[] { Color.red, Color.blue, Color.green };
         for (int i = 0; i < 3; i++)
         {
             GameObject wire = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             wire.name = "Wire_" + i;
             wire.transform.SetParent(root.transform, false);
-            wire.transform.localScale = new Vector3(0.02f, 0.25f, 0.02f);
-            wire.transform.localPosition = new Vector3((i - 1) * 0.06f, 0f, 0f);
+            wire.transform.localScale = new Vector3(0.025f, 0.3f, 0.025f);
+            wire.transform.localPosition = new Vector3(0f, 0.035f, (i - 1) * 0.1f);
+            wire.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
 
             var mr = wire.GetComponent<MeshRenderer>();
             if (mr != null)
@@ -256,6 +298,8 @@ public class Mine : MonoBehaviour
         {
             r.material.color = Color.red;
         }
+
+        MineDamageManager.GetOrCreate().ApplyMineHit(transform.position);
     }
 
     public bool CanBeDetected()
@@ -273,6 +317,11 @@ public class Mine : MonoBehaviour
         return isRevealed;
     }
 
+    public bool IsDefusalInProgress()
+    {
+        return activeDefusalObject != null;
+    }
+
     public bool IsNeutralized()
     {
         return isDefused || hasExploded;
@@ -285,6 +334,15 @@ public class Mine : MonoBehaviour
 
         isRevealed = true;
         SetMineVisible(true);
+    }
+
+    public void HideIfNotActive()
+    {
+        if (!startsHidden || !isRevealed || isDefused || hasExploded || IsDefusalInProgress())
+            return;
+
+        isRevealed = false;
+        SetMineVisible(false);
     }
 
     private void SetMineVisible(bool visible)
