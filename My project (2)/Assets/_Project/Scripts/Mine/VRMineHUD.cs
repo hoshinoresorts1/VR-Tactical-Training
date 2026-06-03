@@ -14,6 +14,7 @@ public class VRMineHUD : MonoBehaviour
     private Text detectionText;
     private Text defusalText;
     private GameObject retryButton;
+    private GameObject mainHallButton;
     private float statusUntil;
     private float detectionUntil;
 
@@ -76,12 +77,14 @@ public class VRMineHUD : MonoBehaviour
     {
         ShowStatus("GAME OVER", Color.red, float.PositiveInfinity);
         SetRetryVisible(true);
+        SetMainHallVisible(false);
     }
 
     public void ShowClear()
     {
         ShowStatus("CLEAR", Color.green, float.PositiveInfinity);
         SetRetryVisible(false);
+        SetMainHallVisible(true);
     }
 
     public void ShowDetection(float duration)
@@ -138,8 +141,10 @@ public class VRMineHUD : MonoBehaviour
         defusalText = CreateText("Defusal", new Vector2(0f, -85f), new Vector2(660f, 100f), 34, TextAnchor.MiddleCenter);
 
         CreateRetryButton();
+        CreateMainHallButton();
         SetLives(3);
         SetRetryVisible(false);
+        SetMainHallVisible(false);
     }
 
     private Text CreateText(string objectName, Vector2 position, Vector2 size, int fontSize, TextAnchor alignment)
@@ -190,9 +195,44 @@ public class VRMineHUD : MonoBehaviour
         label.transform.SetAsLastSibling();
     }
 
+    private void CreateMainHallButton()
+    {
+        mainHallButton = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mainHallButton.name = "MainHallButton";
+        mainHallButton.transform.SetParent(transform, false);
+        mainHallButton.transform.localPosition = new Vector3(0f, -155f, 0f);
+        mainHallButton.transform.localScale = new Vector3(260f, 62f, 8f);
+
+        Renderer renderer = mainHallButton.GetComponent<Renderer>();
+        if (renderer != null)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+                shader = Shader.Find("Standard");
+
+            if (shader != null)
+                renderer.material = new Material(shader) { color = new Color(0.12f, 0.34f, 0.22f) };
+        }
+
+        XRSimpleInteractable interactable = mainHallButton.AddComponent<XRSimpleInteractable>();
+        interactable.selectEntered.AddListener(OnMainHallSelected);
+
+        VRMainHallButton clickHandler = mainHallButton.AddComponent<VRMainHallButton>();
+        clickHandler.returnAction = ReturnToMainHall;
+
+        Text label = CreateText("MainHallLabel", new Vector2(0f, -155f), new Vector2(260f, 62f), 28, TextAnchor.MiddleCenter);
+        label.text = "MAIN HALL";
+        label.transform.SetAsLastSibling();
+    }
+
     private void OnRetrySelected(SelectEnterEventArgs args)
     {
         Retry();
+    }
+
+    private void OnMainHallSelected(SelectEnterEventArgs args)
+    {
+        ReturnToMainHall();
     }
 
     private void SetRetryVisible(bool visible)
@@ -203,6 +243,21 @@ public class VRMineHUD : MonoBehaviour
         Transform label = transform.Find("RetryLabel");
         if (label != null)
             label.gameObject.SetActive(visible);
+    }
+
+    private void SetMainHallVisible(bool visible)
+    {
+        if (mainHallButton != null)
+            mainHallButton.SetActive(visible);
+
+        Transform label = transform.Find("MainHallLabel");
+        if (label != null)
+            label.gameObject.SetActive(visible);
+    }
+
+    private void ReturnToMainHall()
+    {
+        TrainingSceneReturn.GetOrCreate().ReturnToMainHall();
     }
 
     private void Retry()
@@ -226,5 +281,15 @@ public class VRRetryButton : MonoBehaviour
     private void OnMouseDown()
     {
         retryAction?.Invoke();
+    }
+}
+
+public class VRMainHallButton : MonoBehaviour
+{
+    public Action returnAction;
+
+    private void OnMouseDown()
+    {
+        returnAction?.Invoke();
     }
 }
