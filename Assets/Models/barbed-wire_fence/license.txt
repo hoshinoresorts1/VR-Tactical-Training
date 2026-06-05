@@ -1,0 +1,11 @@
+Model Information:
+* title:	Barbed-wire Fence
+* source:	https://sketchfab.com/3d-models/barbed-wire-fence-f3bf62b0e9194cdf9a78b334d40f39c7
+* author:	Xan San (https://sketchfab.com/xansan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Barbed-wire Fence" (https://sketchfab.com/3d-models/barbed-wire-fence-f3bf62b0e9194cdf9a78b334d40f39c7) by Xan San (https://sketchfab.com/xansan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

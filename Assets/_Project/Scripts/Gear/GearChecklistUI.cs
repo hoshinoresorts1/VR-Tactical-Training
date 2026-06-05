@@ -35,8 +35,8 @@ public class GearChecklistUI : MonoBehaviour
         { GearType.Helmet, "Helmet" },
         { GearType.Vest, "Vest" },
         { GearType.Belt, "Belt" },
-        { GearType.Canteen, "Canteen" },
-        { GearType.Grenade, "Grenade" }
+        { GearType.Grenade, "Grenade" },
+        { GearType.Bag, "Bag" }
     };
 
     private void Awake()
@@ -116,8 +116,8 @@ public class GearChecklistUI : MonoBehaviour
             AppendLine(builder, equippedState, GearType.Helmet);
             AppendLine(builder, equippedState, GearType.Vest);
             AppendLine(builder, equippedState, GearType.Belt);
-            AppendLine(builder, equippedState, GearType.Canteen);
             AppendLine(builder, equippedState, GearType.Grenade);
+            AppendLine(builder, equippedState, GearType.Bag);
             if (isTrainingReady)
             {
                 builder.AppendLine();

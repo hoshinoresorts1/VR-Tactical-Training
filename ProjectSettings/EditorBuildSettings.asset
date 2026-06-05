@@ -6,8 +6,17 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 55daccc09a3b69647bbab145b54a3ab3
+    path: Assets/_Project/Scenes/GearScene.unity
+    guid: 40fcc6d2f8da74d31889b78677b9f7db
+  - enabled: 1
+    path: Assets/Scenes/MineMap.unity
+    guid: cdb01fa993c9643f896b457e45811beb
+  - enabled: 1
+    path: Assets/_Project/Scenes/ShootingScene.unity
+    guid: 3fafef17cb1214a6aa31da3ed6b02e50
+  - enabled: 1
+    path: Assets/_Project/Prefabs/CQB/CQBScene.unity
+    guid: 8dbe87df5f3f2084c9b65d039442e1f1
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: bfa1182bd221b4ca89619141f66f1260, type: 2}
     Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: dc5a169419fa04987b057f65238cf3ba, type: 2}
