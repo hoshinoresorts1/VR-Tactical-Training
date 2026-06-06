@@ -2,6 +2,9 @@ using UnityEngine;
 
 public class TrainingScoreManager : MonoBehaviour
 {
+    public const int MaxModuleScore = 100;
+    public const int MaxTotalScore = MaxModuleScore * 4;
+
     public static TrainingScoreManager Instance { get; private set; }
 
     [SerializeField] private int gearScore;
@@ -26,29 +29,56 @@ public class TrainingScoreManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    public static TrainingScoreManager GetOrCreate()
+    {
+        if (Instance != null)
+            return Instance;
+
+        GameObject managerObject = new GameObject("TrainingScoreManager");
+        return managerObject.AddComponent<TrainingScoreManager>();
+    }
+
     public void AddGearScore(int amount)
     {
-        gearScore += amount;
+        SetGearScore(gearScore + amount);
     }
 
     public void AddShootingScore(int amount)
     {
-        shootingScore += amount;
+        SetShootingScore(shootingScore + amount);
     }
 
     public void AddCQBScore(int amount)
     {
-        cqbScore += amount;
+        SetCQBScore(cqbScore + amount);
     }
 
     public void AddMineScore(int amount)
     {
-        mineScore += amount;
+        SetMineScore(mineScore + amount);
+    }
+
+    public void SetGearScore(int value) => gearScore = ClampModuleScore(value);
+    public void SetShootingScore(int value) => shootingScore = ClampModuleScore(value);
+    public void SetCQBScore(int value) => cqbScore = ClampModuleScore(value);
+    public void SetMineScore(int value) => mineScore = ClampModuleScore(value);
+
+    public void ResetScores()
+    {
+        gearScore = 0;
+        shootingScore = 0;
+        cqbScore = 0;
+        mineScore = 0;
     }
 
     public int GetTotalScore()
     {
         return gearScore + shootingScore + cqbScore + mineScore;
+    }
+
+    private int ClampModuleScore(int value)
+    {
+        return Mathf.Clamp(value, 0, MaxModuleScore);
     }
 
     public string GetResultText()

@@ -52,6 +52,12 @@ public class SceneDoor : MonoBehaviour
             Debug.LogWarning("Scene not in Build Settings: " + targetSceneName, this);
             return;
         }
+
+        if (SceneManager.GetActiveScene().name == "MineMap")
+        {
+            MineDamageManager.GetOrCreate().CompleteTraining();
+        }
+
         loading = true;
         SceneManager.LoadScene(targetSceneName);
     }

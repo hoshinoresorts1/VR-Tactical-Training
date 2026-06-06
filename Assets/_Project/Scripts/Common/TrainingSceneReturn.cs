@@ -5,8 +5,8 @@ public class TrainingSceneReturn : MonoBehaviour
 {
     public static TrainingSceneReturn Instance { get; private set; }
 
-    [Tooltip("Main hall scene name. Create this scene later and add it to Build Settings.")]
-    public string mainHallSceneName = "MainHall";
+    [Tooltip("Main hub scene name. Must be in Build Settings.")]
+    public string mainHallSceneName = "SampleScene";
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureManagerOnSceneLoad()

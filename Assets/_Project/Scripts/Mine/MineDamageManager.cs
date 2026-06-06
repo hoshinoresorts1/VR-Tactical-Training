@@ -1,15 +1,16 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class MineDamageManager : MonoBehaviour
 {
     public static MineDamageManager Instance { get; private set; }
 
-    [Header("Lives")]
-    public int maxLives = 3;
-    public int scorePenalty = -10;
+    [Header("Scoring")]
+    public float fullScoreTime = 60f;
+    public float penaltyInterval = 20f;
+    public int penaltyPerInterval = 10;
+    public int defusedMineBonus = 3;
+    public int mineHitPenalty = 5;
 
     [Header("Hit Feedback")]
     public float knockbackDistance = 0.35f;
@@ -18,15 +19,14 @@ public class MineDamageManager : MonoBehaviour
     public float messageDuration = 1.2f;
     public AudioSource audioSource;
 
-    private int lives;
-    private bool gameOver;
     private bool trainingCleared;
     private string centerMessage = "";
     private float messageUntil;
     private AudioClip explosionClip;
     private Coroutine knockbackRoutine;
-    private readonly List<Behaviour> disabledMovementBehaviours = new List<Behaviour>();
-    private readonly List<Rigidbody> lockedRigidbodies = new List<Rigidbody>();
+    private float trainingStartTime;
+    private int defusedMineCount;
+    private int mineHitCount;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureManagerOnSceneLoad()
@@ -43,9 +43,9 @@ public class MineDamageManager : MonoBehaviour
         }
 
         Instance = this;
-        lives = Mathf.Max(1, maxLives);
+        trainingStartTime = Time.time;
         explosionClip = CreateExplosionClip();
-        VRMineHUD.GetOrCreate().SetLives(lives);
+        VRMineHUD.GetOrCreate();
 
         if (audioSource == null)
         {
@@ -67,12 +67,10 @@ public class MineDamageManager : MonoBehaviour
 
     public void ApplyMineHit(Vector3 minePosition)
     {
-        if (gameOver || trainingCleared)
+        if (trainingCleared)
             return;
 
-        lives = Mathf.Max(0, lives - 1);
-        TrainingScoreManager.Instance?.AddMineScore(scorePenalty);
-        VRMineHUD.GetOrCreate().SetLives(lives);
+        mineHitCount++;
         XRHapticFeedback.PulseControllers(1f, 0.35f);
 
         if (audioSource != null && explosionClip != null)
@@ -89,35 +87,38 @@ public class MineDamageManager : MonoBehaviour
             knockbackRoutine = StartCoroutine(KnockbackPlayer(playerRoot, minePosition));
         }
 
-        gameOver = lives <= 0;
-        centerMessage = gameOver ? "GAME OVER" : "MINE HIT!";
+        centerMessage = "MINE HIT!";
         messageUntil = Time.time + messageDuration;
-
-        if (gameOver)
-        {
-            LockPlayerMovement();
-            VRMineHUD.GetOrCreate().ShowGameOver();
-        }
-        else
-        {
-            VRMineHUD.GetOrCreate().ShowHit(messageDuration);
-        }
-
-        Debug.Log(gameOver ? "Mine lives depleted. Game over." : "Mine hit. Lives left: " + lives);
+        VRMineHUD.GetOrCreate().ShowHit(messageDuration);
+        Debug.Log($"Mine hit. Total hits: {mineHitCount}, score penalty: {mineHitCount * mineHitPenalty}");
     }
 
     public void CompleteTraining()
     {
-        if (gameOver || trainingCleared)
+        if (trainingCleared)
             return;
 
         trainingCleared = true;
-        centerMessage = "CLEAR";
-        messageUntil = float.PositiveInfinity;
-        TrainingScoreManager.Instance?.AddMineScore(100);
-        LockPlayerMovement();
-        VRMineHUD.GetOrCreate().ShowClear();
-        Debug.Log("Mine training clear.");
+        centerMessage = "";
+        messageUntil = 0f;
+        float elapsed = Mathf.Max(0f, Time.time - trainingStartTime);
+        int elapsedPenaltySteps = elapsed <= fullScoreTime
+            ? 0
+            : Mathf.CeilToInt((elapsed - fullScoreTime) / Mathf.Max(1f, penaltyInterval));
+        int timeScore = 100 - elapsedPenaltySteps * penaltyPerInterval;
+        int finalScore = Mathf.Clamp(
+            timeScore + defusedMineCount * defusedMineBonus - mineHitCount * mineHitPenalty,
+            0,
+            100);
+        TrainingScoreManager.GetOrCreate().SetMineScore(finalScore);
+        TrainingFlowManager.Instance?.CompleteModule("MineMap", true);
+        Debug.Log($"Mine training clear. Time: {elapsed:0.0}s, Defused: {defusedMineCount}, Hits: {mineHitCount}, Score: {finalScore}");
+    }
+
+    public void NotifyMineDefused()
+    {
+        if (!trainingCleared)
+            defusedMineCount++;
     }
 
     private Transform FindPlayerRoot()
@@ -179,119 +180,19 @@ public class MineDamageManager : MonoBehaviour
         return clip;
     }
 
-    private void LockPlayerMovement()
-    {
-        Transform playerRoot = FindPlayerRoot();
-        if (playerRoot == null)
-            return;
-
-        disabledMovementBehaviours.Clear();
-        lockedRigidbodies.Clear();
-
-        Behaviour[] behaviours = playerRoot.GetComponentsInChildren<Behaviour>(true);
-        foreach (Behaviour behaviour in behaviours)
-        {
-            if (behaviour == null || !behaviour.enabled)
-                continue;
-
-            if (!LooksLikeMovementBehaviour(behaviour))
-                continue;
-
-            behaviour.enabled = false;
-            disabledMovementBehaviours.Add(behaviour);
-        }
-
-        CharacterController controller = playerRoot.GetComponentInChildren<CharacterController>();
-        if (controller != null)
-            controller.enabled = false;
-
-        Rigidbody[] rigidbodies = playerRoot.GetComponentsInChildren<Rigidbody>(true);
-        foreach (Rigidbody body in rigidbodies)
-        {
-            if (body == null)
-                continue;
-
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.isKinematic = true;
-            lockedRigidbodies.Add(body);
-        }
-    }
-
-    private bool LooksLikeMovementBehaviour(Behaviour behaviour)
-    {
-        string typeName = behaviour.GetType().Name;
-        string fullName = behaviour.GetType().FullName ?? typeName;
-
-        return typeName.Contains("MoveProvider")
-            || typeName.Contains("TurnProvider")
-            || typeName.Contains("Locomotion")
-            || typeName.Contains("TeleportationProvider")
-            || fullName.Contains("Locomotion.Movement")
-            || fullName.Contains("Locomotion.Turning");
-    }
-
-    private void Retry()
-    {
-        Scene activeScene = SceneManager.GetActiveScene();
-        if (activeScene.buildIndex >= 0)
-        {
-            SceneManager.LoadScene(activeScene.buildIndex);
-        }
-        else
-        {
-            SceneManager.LoadScene(activeScene.name);
-        }
-    }
-
     private void OnGUI()
     {
-        GUIStyle livesStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 28,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = Color.white }
-        };
-
-        GUI.Label(new Rect(24f, 24f, 220f, 48f), "LIVES: " + lives, livesStyle);
-
-        if (Time.time > messageUntil && !gameOver && !trainingCleared)
+        if (Time.time > messageUntil)
             return;
 
         GUIStyle messageStyle = new GUIStyle(GUI.skin.label)
         {
             alignment = TextAnchor.MiddleCenter,
-            fontSize = gameOver || trainingCleared ? 48 : 36,
+            fontSize = 36,
             fontStyle = FontStyle.Bold,
-            normal = { textColor = gameOver ? Color.red : trainingCleared ? Color.green : Color.yellow }
+            normal = { textColor = Color.yellow }
         };
 
         GUI.Label(new Rect(0f, Screen.height * 0.35f, Screen.width, 80f), centerMessage, messageStyle);
-
-        if (!gameOver)
-            return;
-
-        GUIStyle buttonStyle = new GUIStyle(GUI.skin.button)
-        {
-            fontSize = 30,
-            fontStyle = FontStyle.Bold
-        };
-
-        Rect retryRect = new Rect((Screen.width - 220f) * 0.5f, Screen.height * 0.48f, 220f, 64f);
-        if (GUI.Button(retryRect, "RETRY", buttonStyle))
-            Retry();
-
-#if ENABLE_INPUT_SYSTEM
-        if (UnityEngine.InputSystem.Keyboard.current != null &&
-            UnityEngine.InputSystem.Keyboard.current.rKey.wasPressedThisFrame)
-        {
-            Retry();
-        }
-#else
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            Retry();
-        }
-#endif
     }
 }

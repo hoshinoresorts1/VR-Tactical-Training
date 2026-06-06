@@ -5,7 +5,7 @@ using UnityEngine;
 public class GearEquipManager : MonoBehaviour
 {
     [SerializeField] private GearChecklistUI checklistUI;
-    [SerializeField] private int completionScore = 20;
+    [SerializeField] private int completionScore = 100;
     [SerializeField] private Animator characterAnimator;
 
     private readonly Dictionary<GearType, bool> equippedState = new Dictionary<GearType, bool>();
@@ -173,9 +173,6 @@ public class GearEquipManager : MonoBehaviour
         }
 
         scoreAwarded = true;
-        if (TrainingScoreManager.Instance != null)
-        {
-            TrainingScoreManager.Instance.AddGearScore(completionScore);
-        }
+        TrainingScoreManager.GetOrCreate().SetGearScore(completionScore);
     }
 }

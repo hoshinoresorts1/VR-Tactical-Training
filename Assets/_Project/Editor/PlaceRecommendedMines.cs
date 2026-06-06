@@ -6,8 +6,6 @@ public static class PlaceRecommendedMines
 {
     private const string GenericMinePath = "Assets/Models/generic_mine/scene.gltf";
     private const string MineBoxPath = "Assets/Models/mine-box-full-pipeline/source/Mine_box.fbx";
-    private const string WireDefusalPrefabPath = "Assets/_Project/Prefabs/Mine/WireDefusal.prefab";
-
     private static readonly Vector3[] RecommendedPositions =
     {
         new Vector3(-9f, 0.05f, -10f),
@@ -117,25 +115,18 @@ public static class PlaceRecommendedMines
     [MenuItem("Tools/Mine/Place Recommended Mines")]
     public static void PlaceMines()
     {
-        AddTagIfMissing("Mine");
-        ClearExistingMines();
+        PlaceMinesFromPositions(RecommendedPositions, "recommended");
+    }
 
-        GameObject container = new GameObject("RecommendedMines");
-        Undo.RegisterCreatedObjectUndo(container, "Create RecommendedMines");
+    [MenuItem("Tools/Mine/Place Half Recommended Mines")]
+    public static void PlaceHalfMines()
+    {
+        int halfCount = Mathf.CeilToInt(RecommendedPositions.Length * 0.5f);
+        Vector3[] halfPositions = new Vector3[halfCount];
+        for (int i = 0; i < halfCount; i++)
+            halfPositions[i] = RecommendedPositions[i * 2];
 
-        GameObject visualAsset = LoadVisualAsset();
-        GameObject defusalPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WireDefusalPrefabPath);
-
-        for (int i = 0; i < RecommendedPositions.Length; i++)
-        {
-            CreateMine(container.transform, RecommendedPositions[i], i + 1, visualAsset, defusalPrefab);
-        }
-
-        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
-        Selection.activeGameObject = container;
-        EditorGUIUtility.PingObject(container);
-
-        Debug.Log($"Placed {RecommendedPositions.Length} recommended mines.");
+        PlaceMinesFromPositions(halfPositions, "half recommended");
     }
 
     [MenuItem("Tools/Mine/Add Gap Fill Mines")]
@@ -151,7 +142,6 @@ public static class PlaceRecommendedMines
         }
 
         GameObject visualAsset = LoadVisualAsset();
-        GameObject defusalPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WireDefusalPrefabPath);
         int created = 0;
         int startIndex = Object.FindObjectsOfType<Mine>(true).Length;
 
@@ -160,15 +150,38 @@ public static class PlaceRecommendedMines
             if (HasMineNear(FillGapPositions[i], 0.65f))
                 continue;
 
-            CreateMine(container.transform, FillGapPositions[i], startIndex + created + 1, visualAsset, defusalPrefab);
+            CreateMine(container.transform, FillGapPositions[i], startIndex + created + 1, visualAsset);
             created++;
         }
 
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
         Selection.activeGameObject = container;
         EditorGUIUtility.PingObject(container);
 
         Debug.Log($"Added {created} gap-fill mines. Existing mines were kept.");
+    }
+
+    private static void PlaceMinesFromPositions(Vector3[] positions, string label)
+    {
+        AddTagIfMissing("Mine");
+        ClearExistingMines();
+
+        GameObject container = new GameObject("RecommendedMines");
+        Undo.RegisterCreatedObjectUndo(container, "Create RecommendedMines");
+
+        GameObject visualAsset = LoadVisualAsset();
+        for (int i = 0; i < positions.Length; i++)
+        {
+            CreateMine(container.transform, positions[i], i + 1, visualAsset);
+        }
+
+        EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+        Selection.activeGameObject = container;
+        EditorGUIUtility.PingObject(container);
+
+        Debug.Log($"Placed {positions.Length} {label} mines.");
     }
 
     private static void ClearExistingMines()
@@ -204,7 +217,7 @@ public static class PlaceRecommendedMines
         return AssetDatabase.LoadAssetAtPath<GameObject>(MineBoxPath);
     }
 
-    private static void CreateMine(Transform container, Vector3 position, int index, GameObject visualAsset, GameObject defusalPrefab)
+    private static void CreateMine(Transform container, Vector3 position, int index, GameObject visualAsset)
     {
         GameObject mineObject = new GameObject($"mine1 ({index})");
         Undo.RegisterCreatedObjectUndo(mineObject, "Create Mine");
@@ -213,7 +226,6 @@ public static class PlaceRecommendedMines
         mineObject.tag = "Mine";
 
         Mine mine = mineObject.AddComponent<Mine>();
-        mine.defusalPrefab = defusalPrefab;
         mine.startsHidden = true;
         mine.triggerRadius = 0.45f;
         mine.interactionDistance = 3f;

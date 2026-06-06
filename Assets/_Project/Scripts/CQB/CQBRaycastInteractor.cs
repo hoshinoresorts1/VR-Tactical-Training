@@ -1,12 +1,11 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
-// CQB shooting: raycast-based hit detection driven by the VR controller.
-// - Fires on the right-hand VR controller trigger (auto-bound, no scene wiring
-//   needed). Mouse/Space kept as desktop fallback.
-// - Aims from `aimSource` (assign the controller); falls back to the camera.
-// - Shows an aim line + reticle every frame so the player can see where they
-//   point (the "aim UI").
+// CQB shooting: center-screen hit detection driven by the VR controller.
+// - Fires on HTC Vive / XR controller interaction buttons.
+// - Aims from the camera center instead of drawing a controller ray.
+// - Mouse/Space kept as desktop fallback.
 public class CQBRaycastInteractor : MonoBehaviour
 {
     public Camera playerCamera;
@@ -19,19 +18,22 @@ public class CQBRaycastInteractor : MonoBehaviour
     [Tooltip("Optional explicit fire action. If empty, the right-hand trigger is auto-bound.")]
     public InputActionProperty fireAction;
 
-    [Header("Aim visuals")]
-    public Color aimColor = new Color(1f, 0.2f, 0.2f, 1f);
-    public float reticleSize = 0.05f;
+    [Header("Sound")]
+    public AudioClip fireSound;
+    [Range(0f, 1f)] public float fireVolume = 1f;
 
     private InputAction fire;
     private bool ownsAction;
-    private LineRenderer line;
-    private Transform reticle;
+    private AudioSource audioSource;
+    private GameObject aimReticle;
 
     private void Awake()
     {
         if (playerCamera == null) playerCamera = Camera.main;
-        SetupVisuals();
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        EnsureAimReticle();
     }
 
     private void OnEnable()
@@ -43,12 +45,13 @@ public class CQBRaycastInteractor : MonoBehaviour
         }
         else
         {
-            // Auto-bind to the controller trigger so VR works with no wiring.
-            // Both triggerButton (Vive/most) and trigger (float) + left hand for safety.
+            // Auto-bind common Vive/OpenXR interaction controls.
             fire = new InputAction("CQBFire", InputActionType.Button);
             fire.AddBinding("<XRController>{RightHand}/triggerButton");
             fire.AddBinding("<XRController>{RightHand}/trigger");
-            fire.AddBinding("<XRController>{LeftHand}/triggerButton");
+            fire.AddBinding("<XRController>{RightHand}/gripButton");
+            fire.AddBinding("<XRController>{RightHand}/grip");
+            fire.AddBinding("<XRController>{RightHand}/primary2DAxisClick");
             ownsAction = true;
         }
         fire.performed += OnFire;
@@ -64,72 +67,76 @@ public class CQBRaycastInteractor : MonoBehaviour
         }
     }
 
-    private Transform AimT => aimSource != null ? aimSource : (playerCamera != null ? playerCamera.transform : transform);
-
     private void Update()
     {
+        if (aimReticle != null && scoreManager != null)
+            aimReticle.SetActive(!scoreManager.IsMissionComplete);
+
         // Desktop fallback
         if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) FireRaycast();
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) FireRaycast();
-
-        UpdateAimVisual();
     }
 
     private void OnFire(InputAction.CallbackContext ctx) => FireRaycast();
 
-    private void UpdateAimVisual()
+    private Ray BuildAimRay()
     {
-        Transform a = AimT;
-        if (a == null || line == null) return;
-        Vector3 origin = a.position;
-        Vector3 dir = a.forward;
-        Vector3 end = origin + dir * rayDistance;
-        bool hit = Physics.Raycast(origin, dir, out RaycastHit info, rayDistance);
-        if (hit) end = info.point;
-        line.SetPosition(0, origin);
-        line.SetPosition(1, end);
-        if (reticle != null)
-        {
-            reticle.gameObject.SetActive(hit);
-            if (hit)
-            {
-                reticle.position = info.point + info.normal * 0.01f;
-                reticle.rotation = Quaternion.LookRotation(info.normal);
-            }
-        }
+        if (playerCamera == null) playerCamera = Camera.main;
+        Transform source = playerCamera != null ? playerCamera.transform : (aimSource != null ? aimSource : transform);
+        return new Ray(source.position, source.forward);
+    }
+
+    private void EnsureAimReticle()
+    {
+        if (playerCamera == null || playerCamera.transform.Find("CQBAimReticle") != null)
+            return;
+
+        aimReticle = new GameObject("CQBAimReticle", typeof(RectTransform), typeof(Canvas));
+        aimReticle.transform.SetParent(playerCamera.transform, false);
+        aimReticle.transform.localPosition = new Vector3(0f, 0f, 1.5f);
+        aimReticle.transform.localRotation = Quaternion.identity;
+        aimReticle.transform.localScale = Vector3.one * 0.001f;
+
+        Canvas canvas = aimReticle.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        canvas.worldCamera = playerCamera;
+        canvas.sortingOrder = 1000;
+
+        RectTransform canvasRect = aimReticle.GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(80f, 80f);
+
+        CreateReticleLine("HorizontalOutline", new Vector2(42f, 6f), Color.black);
+        CreateReticleLine("VerticalOutline", new Vector2(6f, 42f), Color.black);
+        CreateReticleLine("Horizontal", new Vector2(38f, 2f), Color.white);
+        CreateReticleLine("Vertical", new Vector2(2f, 38f), Color.white);
+    }
+
+    private void CreateReticleLine(string objectName, Vector2 size, Color color)
+    {
+        GameObject lineObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        lineObject.transform.SetParent(aimReticle.transform, false);
+
+        RectTransform rect = lineObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0.5f, 0.5f);
+        rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = size;
+
+        Image image = lineObject.GetComponent<Image>();
+        image.color = color;
+        image.raycastTarget = false;
     }
 
     private void FireRaycast()
     {
-        Transform a = AimT;
-        Ray ray = new Ray(a.position, a.forward);
+        if (fireSound != null && audioSource != null)
+            audioSource.PlayOneShot(fireSound, fireVolume);
+
+        Ray ray = BuildAimRay();
         if (Physics.Raycast(ray, out RaycastHit hit, rayDistance))
         {
             CQBTarget target = hit.collider.GetComponentInParent<CQBTarget>();
             if (target != null && scoreManager != null) target.Hit(scoreManager);
         }
-    }
-
-    private void SetupVisuals()
-    {
-        line = GetComponent<LineRenderer>();
-        if (line == null) line = gameObject.AddComponent<LineRenderer>();
-        line.positionCount = 2;
-        line.widthMultiplier = 0.006f;
-        line.useWorldSpace = true;
-        line.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        line.material.color = aimColor;
-        line.startColor = line.endColor = aimColor;
-
-        GameObject r = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        r.name = "CQBReticle";
-        var col = r.GetComponent<Collider>();
-        if (col != null) Destroy(col);
-        r.transform.localScale = Vector3.one * reticleSize;
-        var mr = r.GetComponent<MeshRenderer>();
-        mr.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        mr.material.color = aimColor;
-        reticle = r.transform;
-        reticle.gameObject.SetActive(false);
     }
 }

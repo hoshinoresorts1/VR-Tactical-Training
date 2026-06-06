@@ -17,8 +17,8 @@ public class TrainingFlowManager : MonoBehaviour
 {
     public static TrainingFlowManager Instance { get; private set; }
 
-    [SerializeField] private string hallSceneName = "MainHall";
-    [SerializeField] private string resultSceneName = "ResultScene";
+    [SerializeField] private string hallSceneName = "SampleScene";
+    [SerializeField] private string resultSceneName = "SampleScene";
     // Ordered modules used by GoToNext and by AllComplete/AllPassed.
     [SerializeField] private List<string> moduleScenes = new List<string>
     {
@@ -59,12 +59,18 @@ public class TrainingFlowManager : MonoBehaviour
     // ---- Navigation ----
     public void GoToModule(string sceneName)
     {
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning("Module scene is not in Build Settings: " + sceneName, this);
+            return;
+        }
+
         StartTimerIfNeeded();
         SceneManager.LoadScene(sceneName);
     }
 
-    public void GoToHall() => SceneManager.LoadScene(hallSceneName);
-    public void GoToResult() => SceneManager.LoadScene(resultSceneName);
+    public void GoToHall() => LoadConfiguredScene(hallSceneName);
+    public void GoToResult() => LoadConfiguredScene(resultSceneName);
 
     // Advance to the next module in order; if last, go to results.
     public void GoToNext(string currentScene)
@@ -121,6 +127,17 @@ public class TrainingFlowManager : MonoBehaviour
         {
             frozenElapsed = Time.time - startTime;
         }
+    }
+
+    private void LoadConfiguredScene(string sceneName)
+    {
+        if (!Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning("Configured scene is not in Build Settings: " + sceneName, this);
+            return;
+        }
+
+        SceneManager.LoadScene(sceneName);
     }
 
     // Full reset (e.g. for a "retry course" button).

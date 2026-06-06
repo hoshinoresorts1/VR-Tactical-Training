@@ -4,7 +4,9 @@ using UnityEditor.SceneManagement;
 
 public static class FixMainCameraPosition
 {
-    [MenuItem("Tools/Fix Main Camera Position")] 
+    private const float DefaultCameraHeight = 1.63f;
+
+    [MenuItem("Tools/Fix Main Camera Position")]
     public static void FixCamera()
     {
         var mainCamera = Camera.main;
@@ -21,10 +23,26 @@ public static class FixMainCameraPosition
             return;
         }
 
-        mainCamera.transform.position = new Vector3(0f, 1.6f, -5f);
-        mainCamera.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+        Transform cameraOffset = mainCamera.transform.parent;
+        Transform xrOrigin = cameraOffset != null ? cameraOffset.parent : null;
 
-        Debug.Log("Main Camera position fixed to (0, 1.6, -5) and rotation reset.");
+        mainCamera.transform.localPosition = Vector3.zero;
+        mainCamera.transform.localRotation = Quaternion.identity;
+
+        if (cameraOffset != null)
+        {
+            cameraOffset.localPosition = new Vector3(0f, DefaultCameraHeight, 0f);
+            cameraOffset.localRotation = Quaternion.identity;
+        }
+
+        if (xrOrigin != null)
+        {
+            xrOrigin.localPosition = Vector3.zero;
+            xrOrigin.localRotation = Quaternion.identity;
+        }
+
+        Debug.Log("XR camera reset: Main Camera local transform is zero, Camera Offset is 1.63m, and XR Origin is at the scene origin.");
         EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+        EditorSceneManager.SaveOpenScenes();
     }
 }

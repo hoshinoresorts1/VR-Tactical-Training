@@ -1,127 +1,171 @@
+using System;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;         
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 
 [RequireComponent(typeof(AudioSource))]
 public class VRSimpleGun : MonoBehaviour
 {
-    [Header("사격 및 조준 기준점")]
-    public Transform aimPoint; 
-    public Transform muzzlePoint; 
+    [Header("Aim")]
+    public Transform aimPoint;
+    public Transform muzzlePoint;
 
-    [Header("시각 및 청각 효과")]
-    public ParticleSystem muzzleFlash; 
+    [Header("Effects")]
+    public ParticleSystem muzzleFlash;
     public AudioClip fireSound;
 
-    [Header("사격 세션 설정 (10발 제한)")]
+    [Header("Shooting Session")]
     public int maxAmmo = 10;
-    private int currentShotCount = 0;
-    private int accumulatedShootingScore = 0;
-    private bool isSessionEnded = false;
 
-    [Header("UI 연동 (사격장 전용)")]
+    [Header("UI")]
     public TextMeshProUGUI ammoText;
     public TextMeshProUGUI liveScoreText;
     public GameObject resultPanel;
     public TextMeshProUGUI finalScoreText;
 
+    private int currentShotCount;
+    private int accumulatedShootingScore;
+    private bool isSessionEnded;
     private XRGrabInteractable grabInteractable;
-    private AudioSource audioSource; 
-    private float fireRange = 100f;
+    private AudioSource audioSource;
+    private readonly float fireRange = 100f;
 
     private void Awake()
     {
         grabInteractable = GetComponent<XRGrabInteractable>();
         audioSource = GetComponent<AudioSource>();
-        audioSource.playOnAwake = false; 
+        audioSource.playOnAwake = false;
 
         UpdateShootingUI();
-        if (resultPanel != null) resultPanel.SetActive(false);
+
+        if (resultPanel != null)
+            resultPanel.SetActive(false);
     }
 
     private void OnEnable()
     {
-        if (grabInteractable != null) grabInteractable.activated.AddListener(OnTriggerPulled);
+        if (grabInteractable != null)
+            grabInteractable.activated.AddListener(OnTriggerPulled);
     }
 
     private void OnDisable()
     {
-        if (grabInteractable != null) grabInteractable.activated.RemoveListener(OnTriggerPulled);
+        if (grabInteractable != null)
+            grabInteractable.activated.RemoveListener(OnTriggerPulled);
     }
 
     private void Update()
     {
         if (aimPoint != null)
-        {
             Debug.DrawRay(aimPoint.position, aimPoint.forward * fireRange, Color.green);
-        }
     }
 
     private void OnTriggerPulled(ActivateEventArgs args)
     {
-        if (isSessionEnded) return;
+        if (isSessionEnded)
+            return;
+
         FireWeapon();
     }
 
     private void FireWeapon()
     {
+        if (currentShotCount >= maxAmmo)
+            return;
+
         currentShotCount++;
 
-        if (audioSource != null && fireSound != null) audioSource.PlayOneShot(fireSound);
+        if (audioSource != null && fireSound != null)
+            audioSource.PlayOneShot(fireSound);
+
         if (muzzleFlash != null && muzzlePoint != null)
         {
-            muzzleFlash.transform.position = muzzlePoint.position;
-            muzzleFlash.transform.rotation = muzzlePoint.rotation;
+            muzzleFlash.transform.SetPositionAndRotation(muzzlePoint.position, muzzlePoint.rotation);
             muzzleFlash.Play();
         }
 
-        if (aimPoint != null)
-        {
-            RaycastHit hit;
-            if (Physics.Raycast(aimPoint.position, aimPoint.forward, out hit, fireRange))
-            {
-                ShootingTarget target = hit.collider.GetComponent<ShootingTarget>();
-                
-                if (target != null)
-                {
-                    // 새로 개편한 타원형 점수 계산 공식을 호출하여 정밀 판정!
-                    int earnedScore = target.CalculateEllipseScore(hit.point);
-                    accumulatedShootingScore += earnedScore;
-                }
-            }
-        }
+        if (TryGetHitTargetScore(out int earnedScore))
+            accumulatedShootingScore += Mathf.Max(1, earnedScore);
 
         UpdateShootingUI();
 
         if (currentShotCount >= maxAmmo)
-        {
             EndShootingSession();
+    }
+
+    private bool TryGetHitTargetScore(out int score)
+    {
+        score = 0;
+
+        if (aimPoint == null)
+            return false;
+
+        Ray aimRay = new Ray(aimPoint.position, aimPoint.forward);
+        RaycastHit[] hits = Physics.RaycastAll(aimRay, fireRange);
+        if (hits == null || hits.Length == 0)
+            return false;
+
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (RaycastHit hit in hits)
+        {
+            if (hit.collider == null)
+                continue;
+
+            if (hit.collider.transform.IsChildOf(transform))
+                continue;
+
+            ShootingTarget target = FindTargetFromHit(hit.collider);
+            if (target == null)
+                continue;
+
+            if (target.TryCalculateScoreFromRay(aimRay, fireRange, out score, out _))
+                return true;
+
+            score = target.CalculateEllipseScore(hit.point);
+            return true;
         }
+
+        return false;
+    }
+
+    private ShootingTarget FindTargetFromHit(Collider hitCollider)
+    {
+        ShootingTarget target = hitCollider.GetComponent<ShootingTarget>();
+        if (target != null)
+            return target;
+
+        target = hitCollider.GetComponentInParent<ShootingTarget>();
+        if (target != null)
+            return target;
+
+        target = hitCollider.GetComponentInChildren<ShootingTarget>();
+        if (target != null)
+            return target;
+
+        Transform root = hitCollider.transform.root;
+        return root != null ? root.GetComponentInChildren<ShootingTarget>() : null;
     }
 
     private void UpdateShootingUI()
     {
-        // 한글을 지우고 영어로 바꾸면 기본 폰트에서 절대 깨지지 않습니다!
-        if (ammoText != null) ammoText.text = $"AMMO: {maxAmmo - currentShotCount} / {maxAmmo}";
-        if (liveScoreText != null) liveScoreText.text = $"SCORE: {accumulatedShootingScore}";
+        if (ammoText != null)
+            ammoText.text = $"Ammo: {maxAmmo - currentShotCount} / {maxAmmo}";
+
+        if (liveScoreText != null)
+            liveScoreText.text = $"Score: {accumulatedShootingScore}";
     }
 
     private void EndShootingSession()
     {
         isSessionEnded = true;
 
-        if (TrainingScoreManager.Instance != null)
-        {
-            TrainingScoreManager.Instance.AddShootingScore(accumulatedShootingScore);
-        }
+        TrainingScoreManager.GetOrCreate().SetShootingScore(accumulatedShootingScore);
 
-        if (resultPanel != null) resultPanel.SetActive(true);
+        if (resultPanel != null)
+            resultPanel.SetActive(true);
+
         if (finalScoreText != null)
-        {
-            // 결과창 문구도 영어로 깔끔하게 치환
-            finalScoreText.text = $"FINISH\n\nTOTAL: {accumulatedShootingScore} / 100";
-        }
+            finalScoreText.text = $"Final Score: {accumulatedShootingScore} / 100";
     }
 }

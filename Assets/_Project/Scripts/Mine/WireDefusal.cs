@@ -11,7 +11,7 @@ public class WireDefusal : MonoBehaviour
     public int[] correctSequence = new int[] { 0, 1, 2 };
 
     [Tooltip("Randomize the wire cut order whenever defusal starts.")]
-    public bool randomizeSequence = true;
+    public bool randomizeSequence = false;
 
     [Tooltip("Time allowed to cut each wire (seconds)")]
     public float timePerWire = 20f;
@@ -36,10 +36,25 @@ public class WireDefusal : MonoBehaviour
     private int currentStep = 0;
     private float timeRemaining;
     private bool completionQueued;
+#if ENABLE_INPUT_SYSTEM
+    private InputAction cutWireAction;
+#endif
+    private int enabledFrame;
 
     private void OnEnable()
     {
+#if ENABLE_INPUT_SYSTEM
+        SetupVRActions();
+#endif
+        enabledFrame = Time.frameCount;
         BeginDefusal(timePerWire);
+    }
+
+    private void OnDisable()
+    {
+#if ENABLE_INPUT_SYSTEM
+        DisposeVRActions();
+#endif
     }
 
     public void BeginDefusal(float timeLimit)
@@ -71,6 +86,10 @@ public class WireDefusal : MonoBehaviour
         if (WasWireKeyPressed(0)) SelectWire(0);
         if (WasWireKeyPressed(1)) SelectWire(1);
         if (WasWireKeyPressed(2)) SelectWire(2);
+#if ENABLE_INPUT_SYSTEM
+        if (Time.frameCount > enabledFrame + 1 && cutWireAction != null && cutWireAction.WasPressedThisFrame())
+            TryCutWireFromLeftControllerRay();
+#endif
 
         timeRemaining -= Time.deltaTime;
         if (timeRemaining <= 0f)
@@ -99,16 +118,19 @@ public class WireDefusal : MonoBehaviour
     private bool WasWireKeyPressed(int wireIndex)
     {
 #if ENABLE_INPUT_SYSTEM
-        if (Keyboard.current == null)
-            return false;
-
-        return wireIndex switch
+        bool keyboardPressed = false;
+        if (Keyboard.current != null)
         {
-            0 => Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame,
-            1 => Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame,
-            2 => Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame,
-            _ => false
-        };
+            keyboardPressed = wireIndex switch
+            {
+                0 => Keyboard.current.digit1Key.wasPressedThisFrame || Keyboard.current.numpad1Key.wasPressedThisFrame,
+                1 => Keyboard.current.digit2Key.wasPressedThisFrame || Keyboard.current.numpad2Key.wasPressedThisFrame,
+                2 => Keyboard.current.digit3Key.wasPressedThisFrame || Keyboard.current.numpad3Key.wasPressedThisFrame,
+                _ => false
+            };
+        }
+
+        return keyboardPressed;
 #else
         switch (wireIndex)
         {
@@ -123,6 +145,73 @@ public class WireDefusal : MonoBehaviour
         }
 #endif
     }
+
+#if ENABLE_INPUT_SYSTEM
+    private void SetupVRActions()
+    {
+        if (cutWireAction != null)
+            return;
+
+        cutWireAction = CreateWireAction("CutAimedWire", "<XRController>{LeftHand}/triggerButton", "<XRController>{LeftHand}/trigger");
+        cutWireAction.Enable();
+    }
+
+    private InputAction CreateWireAction(string actionName, params string[] bindings)
+    {
+        InputAction action = new InputAction(actionName, InputActionType.Button);
+        foreach (string binding in bindings)
+            action.AddBinding(binding);
+        return action;
+    }
+
+    private void DisposeVRActions()
+    {
+        cutWireAction?.Dispose();
+        cutWireAction = null;
+    }
+
+    private void TryCutWireFromLeftControllerRay()
+    {
+        Transform raySource = FindLeftControllerTransform();
+        if (raySource == null)
+            raySource = Camera.main != null ? Camera.main.transform : transform;
+
+        Ray ray = new Ray(raySource.position, raySource.forward);
+        if (!Physics.Raycast(ray, out RaycastHit hit, 5f))
+            return;
+
+        WireInteractable wire = hit.collider.GetComponent<WireInteractable>() ?? hit.collider.GetComponentInParent<WireInteractable>();
+        if (wire != null && wire.GetComponentInParent<WireDefusal>() == this)
+            wire.CutWire();
+    }
+
+    private Transform FindLeftControllerTransform()
+    {
+        string[] preferredNames =
+        {
+            "Left Controller",
+            "LeftHand Controller",
+            "LeftHand Controller Stabilized",
+            "Left Controller Stabilized"
+        };
+
+        foreach (string preferredName in preferredNames)
+        {
+            GameObject found = GameObject.Find(preferredName);
+            if (found != null)
+                return found.transform;
+        }
+
+        foreach (UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor interactor in FindObjectsOfType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor>())
+        {
+            string objectName = interactor.name.ToLowerInvariant();
+            if (objectName.Contains("left"))
+                return interactor.transform;
+        }
+
+        return null;
+    }
+#endif
 
     public void SelectWire(int wireIndex)
     {

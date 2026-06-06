@@ -1845,7 +1845,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   checklistUI: {fileID: 2088048491002818365}
-  completionScore: 20
+  completionScore: 100
 --- !u!1 &4938313727461914739
 GameObject:
   m_ObjectHideFlags: 0
